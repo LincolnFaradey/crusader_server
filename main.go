@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 	"net"
-	"github.com/LincolnFaradey/ConsoleChat/chat"
+	"github.com/lincolnfaradey/crusader_server/chat"
 )
 
 var openConnections = make(map[string]net.Conn)
