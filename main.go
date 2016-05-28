@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net"
-	"bufio"
 	"encoding/binary"
 )
 
@@ -27,18 +26,33 @@ func main() {
 }
 
 func readMsg(conn net.Conn) ([]byte, error)  {
-	reader := bufio.NewReader(conn)
-	line, err := reader.ReadString('\n')
+	header := make([]byte, 8)
+	typeBuf := make([]byte, 1)
+	if _, err := conn.Read(header); err != nil {
+		return nil, err
+	}
+	if _, err := conn.Read(typeBuf); err != nil {
+		return nil, err
+	}
+	log.Println("Message type:", typeBuf[0])
 
-	return []byte(line), err
+	l := binary.BigEndian.Uint64(header)
+
+	msg := make([]byte, l)
+	if _, err := conn.Read(msg); err != nil {
+		return nil, err
+	}
+
+	return msg, nil
 }
 
 func writeMsg(conn net.Conn, msg []byte) error {
-	bs := make([]byte, 8)
-	binary.BigEndian.PutUint64(bs, uint64(len(msg)))
-
-	data := append(bs, msg[:]...)
-	log.Println("Data:", bs, data)
+	header := make([]byte, 8)
+	binary.BigEndian.PutUint64(header, uint64(len(msg)))
+	tp := []byte{0}
+	ht := append(header, tp[:]...)
+	data := append(ht, msg[:]...)
+	log.Println("Data:", header, ht, data)
 	if _, err := conn.Write(data); err != nil {
 		return err
 	}
