@@ -4,6 +4,8 @@ import (
 	"log"
 	"net"
 	"github.com/lincolnfaradey/crusader_server/chat"
+	"strings"
+	"io/ioutil"
 )
 
 var openConnections = make(map[string]net.Conn)
@@ -43,6 +45,26 @@ func handleConnection(conn net.Conn) {
 			delete(openConnections, conn.RemoteAddr().String())
 			break
 		}
+
+		if m.Kind[0] == chat.DEBUG && strings.Contains(string(m.Content), "/logs") {
+			self := chat.New()
+			self.Kind = []byte{chat.DEBUG}
+
+			buf, err := ioutil.ReadFile("/var/log/crusader.log")
+			switch err {
+			case nil:
+				self.Content = buf
+			default:
+				self.Content = []byte(err.Error())
+			}
+
+			if _, err := self.WriteTo(conn); err != nil {
+				log.Println("Write Error:", err)
+				break
+			}
+			continue
+		}
+
 		addr := conn.RemoteAddr().String()
 		log.Println("Response:", string(m.Content), addr)
 
